@@ -15,7 +15,7 @@ The last versions of python have pip already installed (in the first guide it is
 `git clone https://github.com/PovertyAction/requests_to_twilio.git`
 
 3. Install dependencies in Powershell after getting into the right directory
-`cd requests_to_twilio`
+`cd requests_to_twilio` &nbsp;
 `pip install -r requirements.txt`
 
 ## Twilio credentials
