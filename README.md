@@ -8,9 +8,9 @@ Program to send SMS requests to twilio.
 
 Use [this](https://phoenixnap.com/kb/how-to-install-python-3-windows) guide to install python3 on Windows. 
 
-The last versions of python have pip already installed, but just in case it is not: Use [this](https://www.liquidweb.com/kb/install-pip-windows/) to install pip. 
+The last versions of python have pip already installed (in the first guide it is explained how to check whether pip is installed), but just in case it is not: Use [this](https://www.liquidweb.com/kb/install-pip-windows/) to install pip. 
 
-2. Clone this repo inside Command Prompt(cmd) or, preferably, PowerShell
+2. Clone this repo inside Command Prompt(cmd) or, preferably, PowerShell. To open cmd or PowerShell, search in Start button from Windows.
 
 `git clone https://github.com/PovertyAction/requests_to_twilio.git`
 
