@@ -15,6 +15,7 @@ The last versions of python have pip already installed (in the first guide it is
 `git clone https://github.com/PovertyAction/requests_to_twilio.git`
 
 3. Install dependencies in Powershell after getting into the right directory.
+
 `cd requests_to_twilio` </br>
 `pip install -r requirements.txt`
 
@@ -26,6 +27,7 @@ Please fill up `twilio_credentials_template.py`, and rename it as `twilio_creden
 
 ## Using python
 From the cmd or Powershell, ask
+
 `python twilio_launcher.py [input_file.xlsx] [batch_size] [seconds_between_batches]`
 
 input_file.xlsx should only have one column named 'Number'. Check out `input_example.xlsx`.
