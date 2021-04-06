@@ -1,56 +1,55 @@
 import sys
 import pandas as pd
 import ftfy
+import json
 
 
-def get_question_code(questions_df, message):
+def get_question_code(questions_dict, message):
 
-    question_code_serie = questions_df[questions_df['Question message']==message]['Question code']
+    #Message will have real names instead of {{flow.data.name}}. If thats the case, replace it by standard introduction message
+    if message[:5]=='Hola,':
+        message = questions_dict['q0']
 
-    if question_code_serie.shape[0]>0:
-        question_code = question_code_serie.iloc[0]
+    for q_code, q_message in questions_dict.items():
+        if q_message == message:
+            return q_code
+
+    return None
+
+def get_question_message(questions_dict, question_code):
+
+    if question_code in questions_dict:
+        return questions_dict[question_code]
     else:
-        question_code = None
-        print(f'Couldnt find question code for {message}')
-
-    return question_code
-
-def get_question_message(questions_df, question_code):
-
-    question_message_serie = questions_df[questions_df['Question code']==question_code]['Question message']
-
-    if question_message_serie.shape[0]>0:
-        question_message = question_message_serie.iloc[0]
-    else:
-        question_message = None
         print(f'Couldnt find question message for {question_code}')
+        return None
 
-    return question_message
-
-
-def clean_questions_df(questions_df):
-
-    #Remove any {..} from messages
-    questions_df['Question message'] = questions_df['Question message'].map(lambda x: x.replace('{{flow.data.name_1}}', ''))
-
-    return questions_df
 
 def clean_raw_data_df(raw_data_df):
     #Encode to utf-8
     raw_data_df['Body'] = raw_data_df['Body'].astype(str).apply(lambda x: ftfy.fix_text(x))
 
-    #Fix sorting by date, so that if theres 2 messages with same date, they show up interchanged (so that it doesnt happen two twilio message come together).
-
-    #We assume dates are already sorted
-
     return raw_data_df
 
+def load_questions_dict(questions_json_path, questions_to_consider):
 
-def create_clean_report(input_file, twilio_number, whatsapp):
+    filtered_questions_dict = {}
 
-    raw_data_df = clean_raw_data_df(pd.read_excel(input_file))
-    questions_df = clean_questions_df(pd.read_excel(input_file, sheet_name=1))
+    with open(questions_json_path) as questions_json_file:
+        questions_dict = json.load(questions_json_file)
 
+        flow_states = questions_dict['states']
+        for flow_state in flow_states:
+            if flow_state['name'] in questions_to_consider:
+                #PENDING: Add some vaidations that properites.body exist
+                filtered_questions_dict[flow_state['name']] = ftfy.fix_text(flow_state['properties']['body'])
+
+    return filtered_questions_dict
+
+def create_clean_report(raw_data_path, questions_json_path, questions_to_consider, twilio_number):
+
+    raw_data_df = clean_raw_data_df(pd.read_excel(raw_data_path))
+    questions_dict = load_questions_dict(questions_json_path, questions_to_consider)
 
     #Get list of phone_numbers
     phone_numbers = raw_data_df['From'].unique().tolist()
@@ -63,8 +62,6 @@ def create_clean_report(input_file, twilio_number, whatsapp):
 
     for phone_number_index, phone_number in enumerate(phone_numbers):
 
-        print(phone_number)
-
         #Filter data to only messages sent to this sender or sent by this sender
         phone_number_df = raw_data_df[(raw_data_df['To'] == phone_number) | (raw_data_df['From'] == phone_number)]
 
@@ -74,10 +71,6 @@ def create_clean_report(input_file, twilio_number, whatsapp):
         #Now we will traverse data related to this phone number buttom to top to reconstruct the conversation
         #Keep record of last seen question code
         last_question_code = None
-
-        # if phone_number =='whatsapp:+573103085897':
-        print('phone_number_df')
-        print(phone_number_df[['From','To','Body','SentDate']])
 
         #Keep record of question and its answer. Dict will help given that some questions will be asked more than once (when there are errors), so we can override them
         question_to_answer = {}
@@ -92,15 +85,14 @@ def create_clean_report(input_file, twilio_number, whatsapp):
             message_from_twilio = True if sender==twilio_number else False
 
             if message_from_twilio:
-                this_question_code = get_question_code(questions_df, message)
+                this_question_code = get_question_code(questions_dict, message)
                 if this_question_code is not None:
                     last_question_code = this_question_code
             else:
-                last_question_message = get_question_message(questions_df, last_question_code)
+                last_question_message = get_question_message(questions_dict, last_question_code)
                 question_to_answer[last_question_code] = message
 
 
-        print(question_to_answer)
         report_rows.append(question_to_answer)
 
     report_df = pd.DataFrame(report_rows)
@@ -110,7 +102,9 @@ def create_clean_report(input_file, twilio_number, whatsapp):
 
 
 if __name__=='__main__':
-    input_file = sys.argv[1]
-    twilio_number = sys.argv[2]
-    whatsapp = True#True if sys.argv[3] == '1' else False
-    create_clean_report(input_file, twilio_number, whatsapp)
+    #Pending: include some arguments validation
+    raw_data_path = sys.argv[1]
+    questions_json_path = sys.argv[2]
+    questions_to_consider = sys.argv[3].split(',')
+    twilio_number = sys.argv[4]
+    create_clean_report(raw_data_path, questions_json_path, questions_to_consider, twilio_number)
