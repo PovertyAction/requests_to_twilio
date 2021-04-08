@@ -73,7 +73,15 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
         last_question_code = None
 
         #Keep record of question and its answer. Dict will help given that some questions will be asked more than once (when there are errors), so we can override them
+
+        #First lets create empty dict with all keys, cause we want them all in the .csv output as columns
         question_to_answer = {}
+        for key in 'number','date':
+            question_to_answer[key]=''
+        for q in questions_to_consider:
+            question_to_answer[q]=''
+
+        #Start filling up json
         question_to_answer['number']=phone_number
 
         for index, row in phone_number_df[::-1].iterrows():
