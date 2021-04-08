@@ -35,7 +35,7 @@ def load_questions_dict(questions_json_path, questions_to_consider):
 
     filtered_questions_dict = {}
 
-    with open(questions_json_path) as questions_json_file:
+    with open(questions_json_path, encoding="utf8") as questions_json_file:
         questions_dict = json.load(questions_json_file)
 
         flow_states = questions_dict['states']
