@@ -22,7 +22,7 @@ def launch_twilio_messages(input_file, batch_size, sec_between_batches):
     flow_id = twilio_credentials.get_flow_id()
 
     #Build api url
-    twilio_api_url = "https://studio.twilio.com/v1/Flows/" + flow_id + "/Executions"
+    twilio_api_url = "https://studio.twilio.com/v2/Flows/" + flow_id + "/Executions"
 
     #Iterate through numbers in df and send a post request for each
     #Do this in batches
@@ -31,15 +31,28 @@ def launch_twilio_messages(input_file, batch_size, sec_between_batches):
     for index, row in phones_df.iterrows():
 
         to_number = str(row['Number'])
-        request_payload = {'To': to_number, 'From': from_number}
-
+        #Create additional variables for piping into twilio (Customize as needed)
+        partic_name = str(row["name"])
+        partic_month = str(row["month"])
+        partic_year = str(row["year"])
+        partic_survey_intro = str(row["survey_intro"])
+        partic_city = str(row["city"])
+        partic_job = str(row["job"])
+        partic_full_name = str(row["full_name"])
+        #Create parameter variable that compiles all the extra variables to be piped in. 
+        parameters_1={"name":partic_name,"month":partic_month,"year":partic_year,"survey_intro":partic_survey_intro,"city":partic_city,"job":partic_job,"full_name":partic_full_name}
+        #When sending the additional variables to Twilio, they need to be strings in json. 
+        request_payload = {'To': to_number, 'From': from_number, 'Parameters':json.dumps(parameters_1)}
+        #The following print helps you see what you are sending to Twilio
+        print(request_payload)
         response = requests.post(twilio_api_url, data=request_payload, auth=(account_sid, account_token))
-
+        print(response)
+        print(response.content)
         response_json = json.loads(response.text)
 
         phones_df.at[index, 'status_code'] = response.status_code
 
-        if response.status_code == 200:
+        if response.status_code == 200 or response.status_code == 201:
             phones_df.at[index,'Date'] = datetime.now()
             phones_df.at[index,'Status'] = response_json['status']
             phones_df.at[index,'Execution'] = response_json['sid']
