@@ -5,38 +5,43 @@ import json
 
 
 def get_question_code(questions_dict, message):
-    
+
  #The following message identification part should be done for EVERY question that has {{changing_variables}} inside, because the message will not be the same in json and in the message log.
     #Message will have real names instead of {{flow.data.name}}. If thats the case, identify with a part of the message that doesn't change. Remember your question identification must be unique.
-    #the code message[-5:] is the last 5 characteres of message. The code message[:5] is the first 5 characteres of message. 
-    if message[-132:]=='La encuesta le tomará 5 minutos y estará disponible por las próximas 24 horas. Para continuar con la encuesta, por favor responda SI':
-        message = questions_dict['intro1'] 
-    if message[-190:]=='Esta es una encuesta de seguimiento de 5 minutos, para la cual usted nos autorizó contactarlo(a). Le recordamos que estará disponible durante 24 horas. Para continuar, por favor responda SI.':
-        message = questions_dict['intro2']  
-    if message [-164:]=='Le recordamos que nuestra encuesta corta, para la cual usted nos autorizó contactarlo(a), estará disponible durante 24 horas. Para continuar, por favor responda SI.':
-        message = questions_dict['intro3']
-    if message [-148:]=='humansubjects@poverty-action.org.  Si desea omitir alguna pregunta responda "OMITIR".  Para continuar responda "SI". De lo contrario, responda "NO".':
-        message = questions_dict['incentivo']
-    if message[:9]=='¿Es usted':
-        message = questions_dict['contact_confirmation']
-    if message[:15]=='¿Usted conoce a':
-        message = questions_dict['known_confirm'] 
-    if message[:14]=='¿Podría darnos':
-        message = questions_dict['known_wpp_phone']
-    if message[:25]=='¿Conoce algún otro número':
-        message=questions_dict['known_call_phone']
-    if message[:15]=='¿Todavía reside':
-        message = questions_dict['city_confirm']
-    if message[:26]=='Para confirmar: ¿la ciudad':
-        message = questions_dict['city_other_confirm']
-    if message[:20]=='¿Además del telefono':
-        message = questions_dict['phone_2']
-    if message[:20]=='¿Además del teléfono':
-        message = questions_dict['phone_2']
-    if message[-16:]=='no está buscando':
-        message = questions_dict['lab_1']
-    if message[:27]=='Para confirmar: ¿su ingreso':
-        message = questions_dict['lab_8']
+    #the code message[-5:] is the last 5 characteres of message. The code message[:5] is the first 5 characteres of message.
+
+    if message[:5] =='Hola,':
+        message = questions_dict['q0']
+
+    # if message[-132:]=='La encuesta le tomará 5 minutos y estará disponible por las próximas 24 horas. Para continuar con la encuesta, por favor responda SI':
+    #     message = questions_dict['intro1']
+    # if message[-190:]=='Esta es una encuesta de seguimiento de 5 minutos, para la cual usted nos autorizó contactarlo(a). Le recordamos que estará disponible durante 24 horas. Para continuar, por favor responda SI.':
+    #     message = questions_dict['intro2']
+    # if message [-164:]=='Le recordamos que nuestra encuesta corta, para la cual usted nos autorizó contactarlo(a), estará disponible durante 24 horas. Para continuar, por favor responda SI.':
+    #     message = questions_dict['intro3']
+    # if message [-148:]=='humansubjects@poverty-action.org.  Si desea omitir alguna pregunta responda "OMITIR".  Para continuar responda "SI". De lo contrario, responda "NO".':
+    #     message = questions_dict['incentivo']
+    # if message[:9]=='¿Es usted':
+    #     message = questions_dict['contact_confirmation']
+    # if message[:15]=='¿Usted conoce a':
+    #     message = questions_dict['known_confirm']
+    # if message[:14]=='¿Podría darnos':
+    #     message = questions_dict['known_wpp_phone']
+    # if message[:25]=='¿Conoce algún otro número':
+    #     message=questions_dict['known_call_phone']
+    # if message[:15]=='¿Todavía reside':
+    #     message = questions_dict['city_confirm']
+    # if message[:26]=='Para confirmar: ¿la ciudad':
+    #     message = questions_dict['city_other_confirm']
+    # if message[:20]=='¿Además del telefono':
+    #     message = questions_dict['phone_2']
+    # if message[:20]=='¿Además del teléfono':
+    #     message = questions_dict['phone_2']
+    # if message[-16:]=='no está buscando':
+    #     message = questions_dict['lab_1']
+    # if message[:27]=='Para confirmar: ¿su ingreso':
+    #     message = questions_dict['lab_8']
+
     for q_code, q_message in questions_dict.items():
         if q_message == message:
             return q_code
@@ -92,7 +97,10 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
         phone_number_df = raw_data_df[(raw_data_df['To'] == phone_number) | (raw_data_df['From'] == phone_number)]
 
         #Reset index to facilitate iteration
-        phone_number_df.reset_index(inplace=True)
+        phone_number_df.reset_index(inplace=True, drop=True)
+
+        print(phone_number)
+        print(phone_number_df)
 
         #Now we will traverse data related to this phone number buttom to top to reconstruct the conversation
         #Keep record of last seen question code
@@ -116,6 +124,20 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
             date = row['SentDate']
             question_to_answer['date']=date
 
+
+            def save_question_status(questions_dict, message):
+                this_question_code = get_question_code(questions_dict, message)
+                if this_question_code is not None:
+                    status = row['Status']
+                    question_to_answer[f'{this_question_code}-Status'] = status
+                else:
+                    print(f"Couldnt find question code for first question: {message}")
+
+            #Keep track of first question question (buttom of df)
+            if index+1 == phone_number_df.shape[0]:
+                save_question_status(questions_dict, message)
+
+            #Keep track of all answers to questions we care about
             message_from_twilio = True if sender==twilio_number else False
 
             if message_from_twilio:
@@ -126,7 +148,11 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
                 last_question_message = get_question_message(questions_dict, last_question_code)
                 question_to_answer[last_question_code] = message
 
+            #Keep track of last question status (start of df)
+            if index == 0:
+                save_question_status(questions_dict, message)
 
+        print(question_to_answer)
         report_rows.append(question_to_answer)
 
     report_df = pd.DataFrame(report_rows)
