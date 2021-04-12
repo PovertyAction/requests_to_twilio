@@ -35,7 +35,11 @@ From the cmd or Powershell, run:
 
 `python twilio_launcher.py [input_file.xlsx] [batch_size] [seconds_between_batches]`
 
-input_file.xlsx should only have one column named 'Number'. Check out `input_example.xlsx`.
+input_file.xlsx should have one column named 'Number', other columns may be added and piped into Twilio. Check out `input_example.xlsx`. If you add additional variables, you need to add them as well in the twilio_launcher.py code.
+
+*Running logs_cleaner.py*
+
+`python logs_cleaner.py [raw_log_data.xlsx] [questions_data.json] [questions_to_consider_separated_by_commas] [twilio_number]`
 
 *Running logs_cleaner.py*
 
