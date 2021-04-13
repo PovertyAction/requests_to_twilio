@@ -5,10 +5,8 @@ import json
 import os
 from datetime import datetime
 
-
-def get_question_code(questions_dict, message):
-
- #The following message identification part should be done for EVERY question that has {{changing_variables}} inside, because the message will not be the same in json and in the message log.
+def get_message_raw_version(questions_dict, message):
+    #The following message identification part should be done for EVERY question that has {{changing_variables}} inside, because the message will not be the same in json and in the message log.
     #Message will have real names instead of {{flow.data.name}}. If thats the case, identify with a part of the message that doesn't change. Remember your question identification must be unique.
     #the code message[-5:] is the last 5 characteres of message. The code message[:5] is the first 5 characteres of message.
 
@@ -44,18 +42,29 @@ def get_question_code(questions_dict, message):
     # if message[:27]=='Para confirmar: ¿su ingreso':
     #     message = questions_dict['lab_8']
 
+    return message
+
+def get_question_code(questions_dict, message, pool_questions_to_consider=None):
+
+    #Return code associated to message
+    #If pool_questions_to_consider is not False, we will return code of question only as long as it belongs to pool_questions_to_consider
+
+    #We will first get the raw version of each message
+    message = get_message_raw_version(questions_dict, message)
+
+    question_code = None
+
     for q_code, q_message in questions_dict.items():
         if q_message == message:
-            return q_code
+            question_code = q_code
 
-    return None
-def get_question_message(questions_dict, question_code):
-
-    if question_code in questions_dict:
-        return questions_dict[question_code]
+    if pool_questions_to_consider is not None:
+        if question_code in pool_questions_to_consider:
+            return question_code
+        else:
+            return None
     else:
-        print(f'Couldnt find question message for {question_code}')
-        return None
+        return question_code
 
 
 def clean_raw_data_df(raw_data_df):
@@ -64,20 +73,19 @@ def clean_raw_data_df(raw_data_df):
 
     return raw_data_df
 
-def load_questions_dict(questions_json_path, questions_to_consider):
+def load_questions_dict(questions_json_path):
 
-    filtered_questions_dict = {}
+    q_code_to_message_dict = {}
 
     with open(questions_json_path, encoding="utf8") as questions_json_file:
         questions_dict = json.load(questions_json_file)
 
         flow_states = questions_dict['states']
         for flow_state in flow_states:
-            if flow_state['name'] in questions_to_consider:
-                #PENDING: Add some vaidations that properites.body exist
-                filtered_questions_dict[flow_state['name']] = ftfy.fix_text(flow_state['properties']['body'])
+            if 'properties' in flow_state and 'body' in flow_state['properties']:
+                q_code_to_message_dict[flow_state['name']] = ftfy.fix_text(flow_state['properties']['body'])
 
-    return filtered_questions_dict
+    return q_code_to_message_dict
 
 def compute_duration(question_sent_date, answer_sent_date):
     print(f'answer_sent_date: {answer_sent_date}')
@@ -106,7 +114,7 @@ def create_and_export_report(rows_list, output_file_name):
 def create_clean_report(raw_data_path, questions_json_path, questions_to_consider, twilio_number):
 
     raw_data_df = clean_raw_data_df(pd.read_excel(raw_data_path))
-    questions_dict = load_questions_dict(questions_json_path, questions_to_consider)
+    questions_dict = load_questions_dict(questions_json_path)
 
     #Get list of phone_numbers
     phone_numbers = raw_data_df['From'].unique().tolist()
@@ -141,12 +149,11 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
         question_to_answer = {}
         question_to_duration = {}
 
-
         for index, dict in enumerate([question_to_answer, question_to_duration]):
             dict['Number']=''
             #Add SentDate only to question_to_answer dict
             if index==0:
-                dict['SentDate']=''
+                dict['Last message SentDate']=''
 
             for q in questions_to_consider:
                 dict[q]=''
@@ -157,22 +164,41 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
         for index, row in phone_number_df[::-1].iterrows():
             sender = row['From']
             message = row['Body']
-            question_to_answer['SentDate'] = row['SentDate']
 
-            #Keep track of all answers to questions we care about
+            question_to_answer['Last message SentDate'] = row['SentDate']
+
             message_from_twilio = True if sender==twilio_number else False
 
+            #Keep track of all answers to questions we care about
             if message_from_twilio:
-                this_question_code = get_question_code(questions_dict, message)
-                time_question_sent_date = row['SentDate']
-                if this_question_code is not None:
-                    last_question_code = this_question_code
-                    last_question_sent_date = time_question_sent_date
+
+                #Keep track of first message status by twilio
+                if index+1 == phone_number_df.shape[0]:
+                    question_to_answer['First message'] = get_question_code(questions_dict, message)
+                    question_to_answer['Status first message'] = row['Status']
+
+                #Record answers and durations of ony questions_to_consider
+                current_question_code = get_question_code(questions_dict, message, questions_to_consider)
+
+                last_question_sent_date = row['SentDate'] #Change for current_question_sent_date if we want to keep track of first time we asked question*
+
+                #current_question_code will be none if it was not in the list of questions_to_consider
+                if current_question_code is not None:
+                    last_question_code = current_question_code
+
+                    #last_question_sent_date = current_question_sent_date. Uncomment if we want to keep track of first time we asked question*
+
+                #Keep track of last message status by twilio
+                question_to_answer['Last message code by twilio'] = get_question_code(questions_dict, message)
+                question_to_answer['Last message by twilio'] = message
+                question_to_answer['Status last message'] = row['Status']
+
             else:
-                last_question_message = get_question_message(questions_dict, last_question_code)
                 answer_sent_date = row['SentDate']
                 question_to_answer[last_question_code] = message
                 question_to_duration[last_question_code] = compute_duration(last_question_sent_date, answer_sent_date)
+
+
 
         answers_report_rows.append(question_to_answer)
         durations_report_rows.append(question_to_duration)
