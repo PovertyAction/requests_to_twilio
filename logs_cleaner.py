@@ -2,6 +2,8 @@ import sys
 import pandas as pd
 import ftfy
 import json
+import os
+from datetime import datetime
 
 
 def get_question_code(questions_dict, message):
@@ -77,6 +79,30 @@ def load_questions_dict(questions_json_path, questions_to_consider):
 
     return filtered_questions_dict
 
+def compute_duration(question_sent_date, answer_sent_date):
+    print(f'answer_sent_date: {answer_sent_date}')
+    print(f'question_sent_date: {question_sent_date}')
+
+    def to_date_format(raw_date):
+        return datetime.strptime(raw_date, "%Y-%m-%dT%H:%M:%SZ")
+
+    duration = str(to_date_format(answer_sent_date)-to_date_format(question_sent_date))
+
+    print(duration)
+    return duration
+
+def create_and_export_report(rows_list, output_file_name):
+
+    if not os.path.exists('reports'):
+        os.makedirs('reports')
+
+    #Create df
+    report_df = pd.DataFrame(rows_list)
+    print(report_df)
+    #Export
+    report_df.to_csv(os.path.join('reports', output_file_name), index=False)
+
+
 def create_clean_report(raw_data_path, questions_json_path, questions_to_consider, twilio_number):
 
     raw_data_df = clean_raw_data_df(pd.read_excel(raw_data_path))
@@ -89,7 +115,8 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
     phone_numbers.remove(twilio_number)
 
     #Track of rows of report
-    report_rows = []
+    answers_report_rows = []
+    durations_report_rows = []
 
     for phone_number_index, phone_number in enumerate(phone_numbers):
 
@@ -103,62 +130,55 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
         print(phone_number_df)
 
         #Now we will traverse data related to this phone number buttom to top to reconstruct the conversation
-        #Keep record of last seen question code
+        #Keep record of last seen question code and time sent
         last_question_code = None
+        last_question_sent_date = None
 
-        #Keep record of question and its answer. Dict will help given that some questions will be asked more than once (when there are errors), so we can override them
+        #Keep record of question and its answer and questions and their time-to-responde.
+        #Dicts will help given that some questions will be asked more than once (when there are errors), so we can override them
 
         #First lets create empty dict with all keys, cause we want them all in the .csv output as columns
         question_to_answer = {}
-        for key in 'number','date':
-            question_to_answer[key]=''
-        for q in questions_to_consider:
-            question_to_answer[q]=''
+        question_to_duration = {}
 
-        #Start filling up json
-        question_to_answer['number']=phone_number
+
+        for index, dict in enumerate([question_to_answer, question_to_duration]):
+            dict['Number']=''
+            #Add SentDate only to question_to_answer dict
+            if index==0:
+                dict['SentDate']=''
+
+            for q in questions_to_consider:
+                dict[q]=''
+
+            #Add number to dict
+            dict['Number']=phone_number
 
         for index, row in phone_number_df[::-1].iterrows():
             sender = row['From']
             message = row['Body']
-            date = row['SentDate']
-            question_to_answer['date']=date
-
-
-            def save_question_status(questions_dict, message):
-                this_question_code = get_question_code(questions_dict, message)
-                if this_question_code is not None:
-                    status = row['Status']
-                    question_to_answer[f'{this_question_code}-Status'] = status
-                else:
-                    print(f"Couldnt find question code for first question: {message}")
-
-            #Keep track of first question question (buttom of df)
-            if index+1 == phone_number_df.shape[0]:
-                save_question_status(questions_dict, message)
+            question_to_answer['SentDate'] = row['SentDate']
 
             #Keep track of all answers to questions we care about
             message_from_twilio = True if sender==twilio_number else False
 
             if message_from_twilio:
                 this_question_code = get_question_code(questions_dict, message)
+                time_question_sent_date = row['SentDate']
                 if this_question_code is not None:
                     last_question_code = this_question_code
+                    last_question_sent_date = time_question_sent_date
             else:
                 last_question_message = get_question_message(questions_dict, last_question_code)
+                answer_sent_date = row['SentDate']
                 question_to_answer[last_question_code] = message
+                question_to_duration[last_question_code] = compute_duration(last_question_sent_date, answer_sent_date)
 
-            #Keep track of last question status (start of df)
-            if index == 0:
-                save_question_status(questions_dict, message)
+        answers_report_rows.append(question_to_answer)
+        durations_report_rows.append(question_to_duration)
 
-        print(question_to_answer)
-        report_rows.append(question_to_answer)
-
-    report_df = pd.DataFrame(report_rows)
-    print(report_df)
-    #Export
-    report_df.to_csv('clean_log.csv', index=False)
+    for (rows_list, output_file_name) in [(answers_report_rows, 'answers_log.csv'),(durations_report_rows, 'durations_logs.csv')]:
+        create_and_export_report(rows_list, output_file_name)
 
 
 if __name__=='__main__':
