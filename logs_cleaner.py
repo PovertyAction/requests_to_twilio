@@ -10,37 +10,37 @@ def get_message_raw_version(questions_dict, message):
     #Message will have real names instead of {{flow.data.name}}. If thats the case, identify with a part of the message that doesn't change. Remember your question identification must be unique.
     #the code message[-5:] is the last 5 characteres of message. The code message[:5] is the first 5 characteres of message.
 
-    if message[:5] =='Hola,':
-        message = questions_dict['q0']
+    # if message[:5] =='Hola,':
+    #     message = questions_dict['q0']
 
-    # if message[-132:]=='La encuesta le tomará 5 minutos y estará disponible por las próximas 24 horas. Para continuar con la encuesta, por favor responda SI':
-    #     message = questions_dict['intro1']
-    # if message[-190:]=='Esta es una encuesta de seguimiento de 5 minutos, para la cual usted nos autorizó contactarlo(a). Le recordamos que estará disponible durante 24 horas. Para continuar, por favor responda SI.':
-    #     message = questions_dict['intro2']
-    # if message [-164:]=='Le recordamos que nuestra encuesta corta, para la cual usted nos autorizó contactarlo(a), estará disponible durante 24 horas. Para continuar, por favor responda SI.':
-    #     message = questions_dict['intro3']
-    # if message [-148:]=='humansubjects@poverty-action.org.  Si desea omitir alguna pregunta responda "OMITIR".  Para continuar responda "SI". De lo contrario, responda "NO".':
-    #     message = questions_dict['incentivo']
-    # if message[:9]=='¿Es usted':
-    #     message = questions_dict['contact_confirmation']
-    # if message[:15]=='¿Usted conoce a':
-    #     message = questions_dict['known_confirm']
-    # if message[:14]=='¿Podría darnos':
-    #     message = questions_dict['known_wpp_phone']
-    # if message[:25]=='¿Conoce algún otro número':
-    #     message=questions_dict['known_call_phone']
-    # if message[:15]=='¿Todavía reside':
-    #     message = questions_dict['city_confirm']
-    # if message[:26]=='Para confirmar: ¿la ciudad':
-    #     message = questions_dict['city_other_confirm']
-    # if message[:20]=='¿Además del telefono':
-    #     message = questions_dict['phone_2']
-    # if message[:20]=='¿Además del teléfono':
-    #     message = questions_dict['phone_2']
-    # if message[-16:]=='no está buscando':
-    #     message = questions_dict['lab_1']
-    # if message[:27]=='Para confirmar: ¿su ingreso':
-    #     message = questions_dict['lab_8']
+    if message[-132:]=='La encuesta le tomará 5 minutos y estará disponible por las próximas 24 horas. Para continuar con la encuesta, por favor responda SI':
+        message = questions_dict['intro1']
+    if message[-190:]=='Esta es una encuesta de seguimiento de 5 minutos, para la cual usted nos autorizó contactarlo(a). Le recordamos que estará disponible durante 24 horas. Para continuar, por favor responda SI.':
+        message = questions_dict['intro2']
+    if message [-164:]=='Le recordamos que nuestra encuesta corta, para la cual usted nos autorizó contactarlo(a), estará disponible durante 24 horas. Para continuar, por favor responda SI.':
+        message = questions_dict['intro3']
+    if message [-148:]=='humansubjects@poverty-action.org.  Si desea omitir alguna pregunta responda "OMITIR".  Para continuar responda "SI". De lo contrario, responda "NO".':
+        message = questions_dict['incentivo']
+    if message[:9]=='¿Es usted':
+        message = questions_dict['contact_confirmation']
+    if message[:15]=='¿Usted conoce a':
+        message = questions_dict['known_confirm']
+    if message[:14]=='¿Podría darnos':
+        message = questions_dict['known_wpp_phone']
+    if message[:25]=='¿Conoce algún otro número':
+        message=questions_dict['known_call_phone']
+    if message[:15]=='¿Todavía reside':
+        message = questions_dict['city_confirm']
+    if message[:26]=='Para confirmar: ¿la ciudad':
+        message = questions_dict['city_other_confirm']
+    if message[:20]=='¿Además del telefono':
+        message = questions_dict['phone_2']
+    if message[:20]=='¿Además del teléfono':
+        message = questions_dict['phone_2']
+    if message[-16:]=='no está buscando':
+        message = questions_dict['lab_1']
+    if message[:27]=='Para confirmar: ¿su ingreso':
+        message = questions_dict['lab_8']
 
     return message
 
