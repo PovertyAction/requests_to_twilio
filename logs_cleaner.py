@@ -5,66 +5,55 @@ import json
 import os
 from datetime import datetime
 
-def get_message_raw_version(questions_dict, message):
-    #The following message identification part should be done for EVERY question that has {{changing_variables}} inside, because the message will not be the same in json and in the message log.
-    #Message will have real names instead of {{flow.data.name}}. If thats the case, identify with a part of the message that doesn't change. Remember your question identification must be unique.
-    #the code message[-5:] is the last 5 characteres of message. The code message[:5] is the first 5 characteres of message.
 
-    # if message[:5] =='Hola,':
-    #     message = questions_dict['q0']
+def get_similarity_score(string_a, string_b):
 
-    if message[-132:]=='La encuesta le tomará 5 minutos y estará disponible por las próximas 24 horas. Para continuar con la encuesta, por favor responda SI':
-        message = questions_dict['intro1']
-    if message[-190:]=='Esta es una encuesta de seguimiento de 5 minutos, para la cual usted nos autorizó contactarlo(a). Le recordamos que estará disponible durante 24 horas. Para continuar, por favor responda SI.':
-        message = questions_dict['intro2']
-    if message [-164:]=='Le recordamos que nuestra encuesta corta, para la cual usted nos autorizó contactarlo(a), estará disponible durante 24 horas. Para continuar, por favor responda SI.':
-        message = questions_dict['intro3']
-    if message [-148:]=='humansubjects@poverty-action.org.  Si desea omitir alguna pregunta responda "OMITIR".  Para continuar responda "SI". De lo contrario, responda "NO".':
-        message = questions_dict['incentivo']
-    if message[:9]=='¿Es usted':
-        message = questions_dict['contact_confirmation']
-    if message[:15]=='¿Usted conoce a':
-        message = questions_dict['known_confirm']
-    if message[:14]=='¿Podría darnos':
-        message = questions_dict['known_wpp_phone']
-    if message[:25]=='¿Conoce algún otro número':
-        message=questions_dict['known_call_phone']
-    if message[:15]=='¿Todavía reside':
-        message = questions_dict['city_confirm']
-    if message[:26]=='Para confirmar: ¿la ciudad':
-        message = questions_dict['city_other_confirm']
-    if message[:20]=='¿Además del telefono':
-        message = questions_dict['phone_2']
-    if message[:20]=='¿Además del teléfono':
-        message = questions_dict['phone_2']
-    if message[-16:]=='no está buscando':
-        message = questions_dict['lab_1']
-    if message[:27]=='Para confirmar: ¿su ingreso':
-        message = questions_dict['lab_8']
+    def jaccard_similarity(string_a, string_b):
+        intersection = set(string_a).intersection(set(string_b))
+        union = set(string_a).union(set(string_b))
 
-    return message
+        return len(intersection)/len(union)
+
+    #Could use other if they prove to be better here.
+    return jaccard_similarity(string_a, string_b)
 
 def get_question_code(questions_dict, message, pool_questions_to_consider=None):
 
     #Return code associated to message
     #If pool_questions_to_consider is not False, we will return code of question only as long as it belongs to pool_questions_to_consider
 
-    #We will first get the raw version of each message
-    message = get_message_raw_version(questions_dict, message)
+    #We know that messages sent might contain information extracted from flow.data, and hence, wont exactly be found in questions_dict (which has raw messages, which literally contain {{flow.data.xxx}}
+    #Hence, our strategy is to look fo which question in questions_dict has the highest similarity score with message.
 
-    question_code = None
+    best_question_code = None
+    best_similarity_score = 0
 
     for q_code, q_message in questions_dict.items():
-        if q_message == message:
-            question_code = q_code
+        similarity_score = get_similarity_score(q_message, message)
+
+        if similarity_score > best_similarity_score:
+            best_question_code = q_code
+            best_similarity_score = similarity_score
 
     if pool_questions_to_consider is not None:
-        if question_code in pool_questions_to_consider:
-            return question_code
+        if best_question_code in pool_questions_to_consider:
+
+            # if similarity_score !=1:
+            #     print('///')
+            #     print(f'best_question_code: {best_question_code}')
+            #     print(f'best_similarity_score: {best_similarity_score}')
+            #     print('message')
+            #     print(message)
+            #     print('raw message')
+            #     print(questions_dict[best_question_code])
+            #     print('***')
+            #     print('')
+
+            return best_question_code
         else:
             return None
     else:
-        return question_code
+        return best_question_code
 
 
 def clean_raw_data_df(raw_data_df):
@@ -88,15 +77,12 @@ def load_questions_dict(questions_json_path):
     return q_code_to_message_dict
 
 def compute_duration(question_sent_date, answer_sent_date):
-    print(f'answer_sent_date: {answer_sent_date}')
-    print(f'question_sent_date: {question_sent_date}')
 
     def to_date_format(raw_date):
         return datetime.strptime(raw_date, "%Y-%m-%dT%H:%M:%SZ")
 
     duration = str(to_date_format(answer_sent_date)-to_date_format(question_sent_date))
 
-    print(duration)
     return duration
 
 def create_and_export_report(rows_list, output_file_name):
@@ -135,7 +121,7 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
         phone_number_df.reset_index(inplace=True, drop=True)
 
         print(phone_number)
-        print(phone_number_df)
+        # print(phone_number_df)
 
         #Now we will traverse data related to this phone number buttom to top to reconstruct the conversation
         #Keep record of last seen question code and time sent
@@ -164,7 +150,6 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
         for index, row in phone_number_df[::-1].iterrows():
             sender = row['From']
             message = row['Body']
-
             question_to_answer['Last message SentDate'] = row['SentDate']
 
             message_from_twilio = True if sender==twilio_number else False
@@ -194,9 +179,16 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
                 question_to_answer['Status last message'] = row['Status']
 
             else:
-                answer_sent_date = row['SentDate']
-                question_to_answer[last_question_code] = message
-                question_to_duration[last_question_code] = compute_duration(last_question_sent_date, answer_sent_date)
+                if last_question_code is not None:
+                    answer_sent_date = row['SentDate']
+                    # print(f'last_question_code {last_question_code}')
+                    # print(f'last_question_sent_date {last_question_sent_date}')
+                    # print(f'answer_sent_date {answer_sent_date}')
+                    question_to_answer[last_question_code] = message
+                    question_to_duration[last_question_code] = compute_duration(last_question_sent_date, answer_sent_date)
+                else:
+                    print(f"WARNING: We are reading a user answer '{message}' from '{sender}', but did not kept record of to which question this answer responds. This is probably because you did not include the respective question code as one of your questions of interest when calling this script. Finishing program here")
+
 
 
 
