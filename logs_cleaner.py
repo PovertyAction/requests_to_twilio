@@ -171,6 +171,9 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
                 if current_question_code is not None:
                     last_question_code = current_question_code
 
+                    #Erase response for given question, case we have recorded it before (a bad answer)
+                    question_to_answer[last_question_code]=''
+
                     #last_question_sent_date = current_question_sent_date. Uncomment if we want to keep track of first time we asked question*
 
                 #Keep track of last message status by twilio
@@ -181,11 +184,13 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
             else:
                 if last_question_code is not None:
                     answer_sent_date = row['SentDate']
-                    # print(f'last_question_code {last_question_code}')
-                    # print(f'last_question_sent_date {last_question_sent_date}')
-                    # print(f'answer_sent_date {answer_sent_date}')
-                    question_to_answer[last_question_code] = message
-                    question_to_duration[last_question_code] = compute_duration(last_question_sent_date, answer_sent_date)
+
+                    #Save only first response to the question
+                    if question_to_answer[last_question_code]=='':
+                        question_to_answer[last_question_code] = message
+                        question_to_duration[last_question_code] = compute_duration(last_question_sent_date, answer_sent_date)
+                    else:
+                        print(f'Participant response {message} will not be recorded because {last_question_code} already has a recorded answer: {question_to_answer[last_question_code]}')
                 else:
                     print(f"WARNING: We are reading a user answer '{message}' from '{sender}', but did not kept record of to which question this answer responds. This is probably because you did not include the respective question code as one of your questions of interest when calling this script. Finishing program here")
 
