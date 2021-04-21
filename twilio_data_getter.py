@@ -14,8 +14,8 @@ def get_messages(account_sid, auth_token, date_sent_after_str, date_sent_before_
     client = Client(account_sid, auth_token)
 
 
-    date_sent_after = datetime.strptime(date_sent_after_str, '%Y-%m-%d')
-    date_sent_before = datetime.strptime(date_sent_before_str, '%Y-%m-%d')
+    date_sent_after = datetime.strptime(date_sent_after_str, '%Y-%m-%dT%H:%M:%SZ')
+    date_sent_before = datetime.strptime(date_sent_before_str, '%Y-%m-%dT%H:%M:%SZ')
 
     print(f'date_sent_after: {date_sent_after}')
     print(f'date_sent_before: {date_sent_before}')
@@ -35,9 +35,6 @@ def get_messages(account_sid, auth_token, date_sent_after_str, date_sent_before_
 
 
     return pd.DataFrame(clean_messages)
-
-
-
 
 
 # get_messages(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
