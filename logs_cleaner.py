@@ -4,6 +4,12 @@ import ftfy
 import json
 import os
 from datetime import datetime
+import argparse
+import twilio_data_getter
+
+FLOW_NAME = 'flowname'
+TWILIO_NUMBER = 'whatsappnumber'
+QUESTIONS_OF_INTEREST = 'questionsofinterest'
 
 
 def get_similarity_score(string_a, string_b):
@@ -62,26 +68,41 @@ def clean_raw_data_df(raw_data_df):
 
     return raw_data_df
 
-def load_questions_dict(questions_json_path):
+# DEPRECATED
+# def load_questions_dict(questions_json_path):
+#
+#     q_code_to_message_dict = {}
+#
+#     with open(questions_json_path, encoding="utf8") as questions_json_file:
+#         questions_dict = json.load(questions_json_file)
+#
+#         flow_states = questions_dict['states']
+#         for flow_state in flow_states:
+#             if 'properties' in flow_state and 'body' in flow_state['properties']:
+#                 q_code_to_message_dict[flow_state['name']] = ftfy.fix_text(flow_state['properties']['body'])
+#
+#     return q_code_to_message_dict
+
+def load_questions_dict(flow_json):
 
     q_code_to_message_dict = {}
 
-    with open(questions_json_path, encoding="utf8") as questions_json_file:
-        questions_dict = json.load(questions_json_file)
-
-        flow_states = questions_dict['states']
-        for flow_state in flow_states:
-            if 'properties' in flow_state and 'body' in flow_state['properties']:
-                q_code_to_message_dict[flow_state['name']] = ftfy.fix_text(flow_state['properties']['body'])
+    flow_states = flow_json['definition']['states']
+    for flow_state in flow_states:
+        if 'properties' in flow_state and 'body' in flow_state['properties']:
+            q_code_to_message_dict[flow_state['name']] = ftfy.fix_text(flow_state['properties']['body'])
 
     return q_code_to_message_dict
 
+
 def compute_duration(question_sent_date, answer_sent_date):
 
-    def to_date_format(raw_date):
-        return datetime.strptime(raw_date, "%Y-%m-%dT%H:%M:%SZ")
+    # print(question_sent_date, answer_sent_date)
 
-    duration = str(to_date_format(answer_sent_date)-to_date_format(question_sent_date))
+    # def to_date_format(raw_date):
+    #     return datetime.strptime(raw_date, "%Y-%m-%dT%H:%M:%SZ")
+
+    duration = str(answer_sent_date - question_sent_date)
 
     return duration
 
@@ -95,17 +116,57 @@ def create_and_export_report(rows_list, output_file_name):
     print(report_df)
     #Export
     report_df.to_csv(os.path.join('reports', output_file_name), index=False)
+    print(f"Report saved in {os.path.join('reports', output_file_name)}")
 
 
-def create_clean_report(raw_data_path, questions_json_path, questions_to_consider, twilio_number):
 
-    raw_data_df = clean_raw_data_df(pd.read_excel(raw_data_path))
-    questions_dict = load_questions_dict(questions_json_path)
+def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, flows):
+
+    log_data = twilio_data_getter.get_messages(
+                                    account_sid=account_sid,
+                                    auth_token=auth_token,
+                                    date_sent_after_str=date_sent_after,
+                                    date_sent_before_str=date_sent_before)
+
+
+    #Create one report for each flow
+    for flow in flows:
+
+        output_file_name = f'{flow[FLOW_NAME]}_{date_sent_after}_{date_sent_before}'.replace(':','-')
+
+        create_clean_report(account_sid, auth_token, log_data, flow, output_file_name)
+
+
+
+def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_name):
+
+    #Get flow parameters
+    flow_friendly_name = flow[FLOW_NAME]
+    twilio_number = flow[TWILIO_NUMBER]
+    questions_to_consider = flow[QUESTIONS_OF_INTEREST].split(',')
+
+    # raw_data_df = clean_raw_data_df(raw_data_df)
+
+    flow_json = twilio_data_getter.get_flow_json(account_sid=account_sid,
+                                        auth_token=auth_token,
+                                        flow_friendly_name=flow_friendly_name)
+
+    if flow_json is None:
+        print('Couldnt find flow json')
+        sys.exit(1)
+
+    questions_dict = load_questions_dict(flow_json)
+    # print(questions_dict.keys())
+
 
     #Get list of phone_numbers
-    phone_numbers = raw_data_df['From'].unique().tolist()
+    phone_numbers = raw_data_df['from'].unique().tolist()
 
     #Remove twilio_number from phone_numbers
+    if twilio_number not in phone_numbers:
+        print(f'twilio number {twilio_number} not in list of phones found in data')
+        sys.exit(1)
+
     phone_numbers.remove(twilio_number)
 
     #Track of rows of report
@@ -115,13 +176,14 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
     for phone_number_index, phone_number in enumerate(phone_numbers):
 
         #Filter data to only messages sent to this sender or sent by this sender
-        phone_number_df = raw_data_df[(raw_data_df['To'] == phone_number) | (raw_data_df['From'] == phone_number)]
+        phone_number_df = raw_data_df[(raw_data_df['to'] == phone_number) | (raw_data_df['from'] == phone_number)]
 
         #Reset index to facilitate iteration
         phone_number_df.reset_index(inplace=True, drop=True)
 
-        print(phone_number)
-        # print(phone_number_df)
+        # print('//')
+        # print(phone_number)
+        # print(phone_number_df[['from','to','body']])
 
         #Now we will traverse data related to this phone number buttom to top to reconstruct the conversation
         #Keep record of last seen question code and time sent
@@ -139,7 +201,7 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
             dict['Number']=''
             #Add SentDate only to question_to_answer dict
             if index==0:
-                dict['Last message SentDate']=''
+                dict['Last message date_sent']=''
 
             for q in questions_to_consider:
                 dict[q]=''
@@ -147,10 +209,11 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
             #Add number to dict
             dict['Number']=phone_number
 
+
         for index, row in phone_number_df[::-1].iterrows():
-            sender = row['From']
-            message = row['Body']
-            question_to_answer['Last message SentDate'] = row['SentDate']
+            sender = row['from']
+            message = row['body']
+            question_to_answer['Last message date_sent'] = str(row['datesent'])
 
             message_from_twilio = True if sender==twilio_number else False
 
@@ -160,12 +223,12 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
                 #Keep track of first message status by twilio
                 if index+1 == phone_number_df.shape[0]:
                     question_to_answer['First message'] = get_question_code(questions_dict, message)
-                    question_to_answer['Status first message'] = row['Status']
+                    question_to_answer['Status first message'] = row['status']
 
                 #Record answers and durations of ony questions_to_consider
                 current_question_code = get_question_code(questions_dict, message, questions_to_consider)
 
-                last_question_sent_date = row['SentDate'] #Change for current_question_sent_date if we want to keep track of first time we asked question*
+                last_question_sent_date = row['datesent'] #Change for current_question_sent_date if we want to keep track of first time we asked question*
 
                 #current_question_code will be none if it was not in the list of questions_to_consider
                 if current_question_code is not None:
@@ -179,35 +242,125 @@ def create_clean_report(raw_data_path, questions_json_path, questions_to_conside
                 #Keep track of last message status by twilio
                 question_to_answer['Last message code by twilio'] = get_question_code(questions_dict, message)
                 question_to_answer['Last message by twilio'] = message
-                question_to_answer['Status last message'] = row['Status']
+                question_to_answer['Status last message'] = row['status']
 
             else:
                 if last_question_code is not None:
-                    answer_sent_date = row['SentDate']
+                    answer_sent_date = row['datesent']
 
                     #Save only first response to the question
                     if question_to_answer[last_question_code]=='':
                         question_to_answer[last_question_code] = message
                         question_to_duration[last_question_code] = compute_duration(last_question_sent_date, answer_sent_date)
-                    else:
-                        print(f'Participant response {message} will not be recorded because {last_question_code} already has a recorded answer: {question_to_answer[last_question_code]}')
-                else:
-                    print(f"WARNING: We are reading a user answer '{message}' from '{sender}', but did not kept record of to which question this answer responds. This is probably because you did not include the respective question code as one of your questions of interest when calling this script. Finishing program here")
+
+                    # else:
+                    #     print(f'Participant response {message} will not be recorded because {last_question_code} already has a recorded answer: {question_to_answer[last_question_code]}')
+                # else:
+                #     print(f"WARNING: We are reading a user answer '{message}' from '{sender}', but did not kept record of to which question this answer responds. This is probably because you did not include the respective question code as one of your questions of interest when calling this script. Finishing program here")
 
 
 
-
+        # print(question_to_answer)
         answers_report_rows.append(question_to_answer)
         durations_report_rows.append(question_to_duration)
 
-    for (rows_list, output_file_name) in [(answers_report_rows, 'answers_log.csv'),(durations_report_rows, 'durations_logs.csv')]:
-        create_and_export_report(rows_list, output_file_name)
+    for (rows_list, report_output_name) in [(answers_report_rows, f'{output_file_name}-answers.csv'),(durations_report_rows, f'{output_file_name}-durations.csv')]:
+        create_and_export_report(rows_list, report_output_name)
 
 
+def parse_args():
+    """ Parse command line arguments.
+    """
+    parser = argparse.ArgumentParser(description="Logs cleaner")
+
+    parser.add_argument(
+        "--account_sid",
+        help="Twilio account SID",
+        default=None,
+        required=True,
+        type=str
+    )
+
+    parser.add_argument(
+        "--account_token",
+        help="Twilio account token",
+        default=None,
+        required=True,
+        type=str
+    )
+
+    parser.add_argument(
+        "--date_sent_after",
+        help="Only messages after this date will be considered",
+        default=None,
+        required=True,
+        type=str
+    )
+
+    parser.add_argument(
+        "--date_sent_before",
+        help="Only messages before this date will be considered",
+        default=None,
+        required=True,
+        type=str
+    )
+
+    parser.add_argument(
+        "--flow",
+        help="json_file:json_file_path whatsapp_number:whatsapp_number questions_of_interest:[q0,q1]",
+        nargs='+',
+        action='append',
+        default=None,
+        required=True,
+        type=str
+    )
+
+    return parser.parse_args()
+
+def parse_flows_data(list_flows, expected_flow_inputs = [FLOW_NAME, TWILIO_NUMBER, QUESTIONS_OF_INTEREST]):
+
+    flows_data_dicts = []
+
+    for flow_inputs in list_flows:
+
+        #Structured way of keeping flow data
+        flow_data_dict = {}
+
+        #Validate that flow_inputs are the necessary
+        # jsonfile:a whatsappnumber:1 questionsofinterest:[3,5]
+        if len(flow_inputs)!=3:
+            print('Each flow_input should have 3 arguments (jsonfile:xxx, whatsappnumber:xxx, questionsofinterest:xxx')
+            sys.exit(1)
+
+        for flow_input in flow_inputs:
+            if not ':' in flow_input:
+                print('flow_inputs should be specified as key:value')
+                sys.exit(1)
+
+            flow_input_k = flow_input.split(':')[0]
+            flow_input_v = ':'.join(flow_input.split(':')[1:])
+
+            if not flow_input_k in expected_flow_inputs:
+                print(f'{flow_input_k} should be one of the following: jsonfile, whatsappnumber, questionsofinterest')
+                sys.exit(1)
+
+            flow_data_dict[flow_input_k] = flow_input_v
+
+        flows_data_dicts.append(flow_data_dict)
+
+    return flows_data_dicts
+
+
+
+#python .\logs_cleaner.py --account_sid 1 --account_token 2 --date_sent_after 1 --date_sent_before 2 --flow jsonfile:a whatsappnumber:1 questionsofinterest:q0,q1
 if __name__=='__main__':
-    #Pending: include some arguments validation
-    raw_data_path = sys.argv[1]
-    questions_json_path = sys.argv[2]
-    questions_to_consider = sys.argv[3].split(',')
-    twilio_number = sys.argv[4]
-    create_clean_report(raw_data_path, questions_json_path, questions_to_consider, twilio_number)
+
+    args = parse_args()
+
+    flows = parse_flows_data(args.flow)
+
+    create_reports(account_sid=args.account_sid,
+                        auth_token=args.account_token,
+                        date_sent_after=args.date_sent_after,
+                        date_sent_before=args.date_sent_before,
+                        flows=flows)
