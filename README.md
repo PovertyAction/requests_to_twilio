@@ -39,11 +39,7 @@ input_file.xlsx should have one column named 'Number', other columns may be adde
 
 *Running logs_cleaner.py*
 
-`python logs_cleaner.py [raw_log_data.xlsx] [questions_data.json] [questions_to_consider_separated_by_commas] [twilio_number]`
-
-*Running logs_cleaner.py*
-
-`python logs_cleaner.py [raw_log_data.xlsx] [questions_data.json] [questions_to_consider_separated_by_commas] [twilio_number]`
+`python .\logs_cleaner.py --account_sid your_account_sid --account_token your_account_token --date_sent_after 2021-03-31 --date_sent_before 2021-04-01 --flow flowname:"flow_a" whatsappnumber:whatsapp:+xxxxx questionsofinterest:intro1,lab_1,lab_2,lab_3 --flow flowname:"flow_b" whatsappnumber:whatsapp:+xxxxx questionsofinterest:intro1,lab_4,lab_5,lab_6`
 
 ## Using .exe
 
