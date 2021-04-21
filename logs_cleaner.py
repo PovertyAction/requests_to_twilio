@@ -97,10 +97,10 @@ def load_questions_dict(flow_json):
 
 def compute_duration(question_sent_date, answer_sent_date):
 
-    print(question_sent_date, answer_sent_date)
+    # print(question_sent_date, answer_sent_date)
 
-    def to_date_format(raw_date):
-        return datetime.strptime(raw_date, "%Y-%m-%dT%H:%M:%SZ")
+    # def to_date_format(raw_date):
+    #     return datetime.strptime(raw_date, "%Y-%m-%dT%H:%M:%SZ")
 
     duration = str(answer_sent_date - question_sent_date)
 
@@ -116,6 +116,7 @@ def create_and_export_report(rows_list, output_file_name):
     print(report_df)
     #Export
     report_df.to_csv(os.path.join('reports', output_file_name), index=False)
+    print(f"Report saved in {os.path.join('reports', output_file_name)}")
 
 
 
@@ -127,12 +128,11 @@ def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, f
                                     date_sent_after_str=date_sent_after,
                                     date_sent_before_str=date_sent_before)
 
-    print(log_data)
 
     #Create one report for each flow
     for flow in flows:
 
-        output_file_name = f'{flow[FLOW_NAME]}_{date_sent_after}_{date_sent_before}.csv'
+        output_file_name = f'{flow[FLOW_NAME]}_{date_sent_after}_{date_sent_before}'.replace(':','-')
 
         create_clean_report(account_sid, auth_token, log_data, flow, output_file_name)
 
@@ -156,7 +156,7 @@ def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_
         sys.exit(1)
 
     questions_dict = load_questions_dict(flow_json)
-    print(questions_dict.keys())
+    # print(questions_dict.keys())
 
 
     #Get list of phone_numbers
@@ -181,9 +181,9 @@ def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_
         #Reset index to facilitate iteration
         phone_number_df.reset_index(inplace=True, drop=True)
 
-        print('//')
-        print(phone_number)
-        print(phone_number_df[['from','to','body']])
+        # print('//')
+        # print(phone_number)
+        # print(phone_number_df[['from','to','body']])
 
         #Now we will traverse data related to this phone number buttom to top to reconstruct the conversation
         #Keep record of last seen question code and time sent
@@ -252,19 +252,20 @@ def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_
                     if question_to_answer[last_question_code]=='':
                         question_to_answer[last_question_code] = message
                         question_to_duration[last_question_code] = compute_duration(last_question_sent_date, answer_sent_date)
-                    else:
-                        print(f'Participant response {message} will not be recorded because {last_question_code} already has a recorded answer: {question_to_answer[last_question_code]}')
-                else:
-                    print(f"WARNING: We are reading a user answer '{message}' from '{sender}', but did not kept record of to which question this answer responds. This is probably because you did not include the respective question code as one of your questions of interest when calling this script. Finishing program here")
+
+                    # else:
+                    #     print(f'Participant response {message} will not be recorded because {last_question_code} already has a recorded answer: {question_to_answer[last_question_code]}')
+                # else:
+                #     print(f"WARNING: We are reading a user answer '{message}' from '{sender}', but did not kept record of to which question this answer responds. This is probably because you did not include the respective question code as one of your questions of interest when calling this script. Finishing program here")
 
 
 
-        print(question_to_answer)
+        # print(question_to_answer)
         answers_report_rows.append(question_to_answer)
         durations_report_rows.append(question_to_duration)
 
-    for (rows_list, output_file_name) in [(answers_report_rows, f'{output_file_name}-answers.csv'),(durations_report_rows, f'{output_file_name}-durations.csv')]:
-        create_and_export_report(rows_list, output_file_name)
+    for (rows_list, report_output_name) in [(answers_report_rows, f'{output_file_name}-answers.csv'),(durations_report_rows, f'{output_file_name}-durations.csv')]:
+        create_and_export_report(rows_list, report_output_name)
 
 
 def parse_args():
