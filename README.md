@@ -21,10 +21,6 @@ The last versions of python have pip already installed (in the first guide it is
 `cd requests_to_twilio` </br>
 `pip install -r requirements.txt`
 
-## Twilio credentials
-
-Please fill up `twilio_credentials_template.py`, and rename it as `twilio_credentials.py`. You have to open the file with any text editor (sublime or atom recommended)
-
 # How to run
 
 ## Using python
@@ -35,7 +31,10 @@ From the cmd or Powershell, run:
 
 `python twilio_launcher.py [input_file.xlsx] [batch_size] [seconds_between_batches]`
 
-input_file.xlsx should have one column named 'Number', other columns may be added and piped into Twilio. Check out `input_example.xlsx`. If you add additional variables, you need to add them as well in the twilio_launcher.py code.
+`python twilio_launcher.py --account_sid your_account_sid --account_token your_account_token --twilio_number your_twilio_number --flow_id flow_id --input_file full_path_to_input_file --batch_size batch_size --sec_between_batches sec_between_batches --columns_with_info_to_send name,full_name,month,year,survey_intro,city,job,caseid`
+
+
+input_file.xlsx should have one column named 'Number', and all other columns specified as inputs (columns_with_info_to_send). Check out `input_example.xlsx` for an example.
 
 *Running logs_cleaner.py*
 
