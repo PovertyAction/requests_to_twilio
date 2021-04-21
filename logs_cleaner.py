@@ -7,9 +7,10 @@ from datetime import datetime
 import argparse
 import twilio_data_getter
 
-FLOW_NAME = 'flowname'
-TWILIO_NUMBER = 'whatsappnumber'
-QUESTIONS_OF_INTEREST = 'questionsofinterest'
+
+FLOW_NAME = 'flow_name'
+TWILIO_NUMBER = 'twilio_number'
+QUESTIONS_OF_INTEREST = 'questions_of_interest'
 
 
 def get_similarity_score(string_a, string_b):
@@ -305,9 +306,10 @@ def parse_args():
         type=str
     )
 
+
     parser.add_argument(
         "--flow",
-        help="json_file:json_file_path whatsapp_number:whatsapp_number questions_of_interest:[q0,q1]",
+        help="flow_name:'my_flow' twilio_number:whatsapp_number:+56xxx questions_of_interest:q0,q1",
         nargs='+',
         action='append',
         default=None,
@@ -351,8 +353,6 @@ def parse_flows_data(list_flows, expected_flow_inputs = [FLOW_NAME, TWILIO_NUMBE
     return flows_data_dicts
 
 
-
-#python .\logs_cleaner.py --account_sid 1 --account_token 2 --date_sent_after 1 --date_sent_before 2 --flow jsonfile:a whatsappnumber:1 questionsofinterest:q0,q1
 if __name__=='__main__':
 
     args = parse_args()
