@@ -29,16 +29,16 @@ The last versions of python have pip already installed (in the first guide it is
 
 From the cmd or Powershell, run:
 
-`python twilio_launcher.py [input_file.xlsx] [batch_size] [seconds_between_batches]`
-
 `python twilio_launcher.py --account_sid your_account_sid --account_token your_account_token --twilio_number your_twilio_number --flow_id flow_id --input_file full_path_to_input_file --batch_size batch_size --sec_between_batches sec_between_batches --columns_with_info_to_send name,full_name,month,year,survey_intro,city,job,caseid`
 
 
-input_file.xlsx should have one column named 'Number', and all other columns specified as inputs (columns_with_info_to_send). Check out `input_example.xlsx` for an example.
+input_file.xlsx should have one column named `Number`, and all other columns specified as inputs (columns_with_info_to_send). Check out `input_example.xlsx` for an example.
 
 *Running logs_cleaner.py*
 
-`python .\logs_cleaner.py --account_sid your_account_sid --account_token your_account_token --date_sent_after 2021-03-31T22:15:24Z --date_sent_before 2021-04-01T22:15:24Z --flow flowname:"flow_a" whatsappnumber:whatsapp:+xxxxx questionsofinterest:intro1,lab_1,lab_2,lab_3 --flow flowname:"flow_b" whatsappnumber:whatsapp:+xxxxx questionsofinterest:intro1,lab_4,lab_5,lab_6`
+`python .\logs_cleaner.py --account_sid your_account_sid --account_token your_account_token --date_sent_after 2021-03-31T22:15:24Z --date_sent_before 2021-04-01T22:15:24Z --flow flow_name:"flow_a" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3 --flow flow_name:"flow_b" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3`
+
+be careful to respect exact same format of inputs
 
 ## Using .exe
 
