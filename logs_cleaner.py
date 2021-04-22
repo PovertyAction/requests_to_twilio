@@ -132,6 +132,10 @@ def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, o
                                     date_sent_before_str=date_sent_before)
 
 
+    if log_data is False:
+        print(f'No messages found between {date_sent_after} and {date_sent_before}')
+        return
+
     #Create one report for each flow
     for flow in flows:
 
@@ -163,6 +167,7 @@ def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_
 
 
     #Get list of phone_numbers
+    print(raw_data_df)
     phone_numbers = raw_data_df['from'].unique().tolist()
 
     #Remove twilio_number from phone_numbers

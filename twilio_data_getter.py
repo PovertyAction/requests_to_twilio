@@ -23,6 +23,10 @@ def get_messages(account_sid, auth_token, date_sent_after_str, date_sent_before_
     messages = client.messages.list(date_sent_after=date_sent_after,
                                    date_sent_before=date_sent_before)
 
+    if len(messages)==0:
+        return False
+
+
     clean_messages = []
     for message in messages:
         clean_message={}
