@@ -109,19 +109,16 @@ def compute_duration(question_sent_date, answer_sent_date):
 
 def create_and_export_report(rows_list, output_file_name):
 
-    if not os.path.exists('reports'):
-        os.makedirs('reports')
-
     #Create df
     report_df = pd.DataFrame(rows_list)
     print(report_df)
     #Export
-    report_df.to_csv(os.path.join('reports', output_file_name), index=False)
-    print(f"Report saved in {os.path.join('reports', output_file_name)}")
+    report_df.to_csv(output_file_name, index=False)
+    print(f"Report saved in {output_file_name}")
 
 
 
-def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, flows):
+def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, outputs_directory, flows):
 
     log_data = twilio_data_getter.get_messages(
                                     account_sid=account_sid,
@@ -133,7 +130,7 @@ def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, f
     #Create one report for each flow
     for flow in flows:
 
-        output_file_name = f'{flow[FLOW_NAME]}_{date_sent_after}_{date_sent_before}'.replace(':','-')
+        output_file_name = os.path.join(outputs_directory, f'{flow[FLOW_NAME]}_{date_sent_after}_{date_sent_before}'.replace(':','-'))
 
         create_clean_report(account_sid, auth_token, log_data, flow, output_file_name)
 
@@ -274,38 +271,22 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description="Logs cleaner")
 
-    parser.add_argument(
-        "--account_sid",
-        help="Twilio account SID",
-        default=None,
-        required=True,
-        type=str
-    )
 
-    parser.add_argument(
-        "--account_token",
-        help="Twilio account token",
-        default=None,
-        required=True,
-        type=str
-    )
+    #Add arguments
+    for (argument, arg_help, arg_type) in [
+           ('--account_sid', 'Twilio account SID', str),
+           ('--account_token', 'Twilio account token', str),
+           ('--date_sent_after', 'Only messages after this date will be considered, format %Y-%m-%dT%H:%M:%SZ', str),
+           ('--date_sent_before', 'Only messages before this date will be considered, format %Y-%m-%dT%H:%M:%SZ', str),
+          ('--outputs_directory', 'Path to folder where outputs should be saved. Must be in a folder in Boxcryptor (must start with X:)', str)]:
 
-    parser.add_argument(
-        "--date_sent_after",
-        help="Only messages after this date will be considered",
-        default=None,
-        required=True,
-        type=str
-    )
-
-    parser.add_argument(
-        "--date_sent_before",
-        help="Only messages before this date will be considered",
-        default=None,
-        required=True,
-        type=str
-    )
-
+        parser.add_argument(
+            argument,
+            help=arg_help,
+            default=None,
+            required=True,
+            type=arg_type
+        )
 
     parser.add_argument(
         "--flow",
@@ -352,15 +333,29 @@ def parse_flows_data(list_flows, expected_flow_inputs = [FLOW_NAME, TWILIO_NUMBE
 
     return flows_data_dicts
 
+def validate_outputs_are_in_boxcryptor(outputs_directory):
+    if os.path.abspath(outputs_directory)[0] == 'X':
+        return True
+    else:
+        return False
+
 
 if __name__=='__main__':
 
     args = parse_args()
 
+    #Parse flows inputs into a workeable format
     flows = parse_flows_data(args.flow)
+
+    #Validate that outputs_directory lives in X:
+    output_in_boxcryptor = validate_outputs_are_in_boxcryptor(args.outputs_directory)
+    if not output_in_boxcryptor:
+        print(f'Your directory for outputs is not in Boxcryptor, please fix that and run again')
+        sys.exit(1)
 
     create_reports(account_sid=args.account_sid,
                         auth_token=args.account_token,
                         date_sent_after=args.date_sent_after,
                         date_sent_before=args.date_sent_before,
+                        outputs_directory=args.outputs_directory,
                         flows=flows)

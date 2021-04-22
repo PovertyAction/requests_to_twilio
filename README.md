@@ -36,9 +36,10 @@ input_file.xlsx should have one column named `Number`, and all other columns spe
 
 *Running logs_cleaner.py*
 
-`python .\logs_cleaner.py --account_sid your_account_sid --account_token your_account_token --date_sent_after 2021-03-31T22:15:24Z --date_sent_before 2021-04-01T22:15:24Z --flow flow_name:"flow_a" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3 --flow flow_name:"flow_b" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3`
+`python .\logs_cleaner.py --account_sid your_account_sid --account_token your_account_token --date_sent_after 2021-03-31T22:15:24Z --date_sent_before 2021-04-01T22:15:24Z --outputs_directory X:\Box\CP_Projects\path\to\folder --flow flow_name:"flow_a" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3 --flow flow_name:"flow_b" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3`
 
 be careful to respect exact same format of inputs
+outputs directory must be in boxcryptor (start with X:)
 
 ## Using .exe
 
