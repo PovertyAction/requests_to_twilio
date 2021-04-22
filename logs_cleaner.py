@@ -136,6 +136,9 @@ def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, o
         print(f'No messages found between {date_sent_after} and {date_sent_before}')
         return
 
+    #Save log data to outputs directory
+    log_data.to_csv(os.path.join(outputs_directory,'raw_log_data.csv'))
+
     #Create one report for each flow
     for flow in flows:
 
@@ -163,11 +166,14 @@ def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_
         sys.exit(1)
 
     questions_dict = load_questions_dict(flow_json)
-    # print(questions_dict.keys())
-
-
-    #Get list of phone_numbers
-    print(raw_data_df)
+    # for key, value in questions_dict.items():
+    #     if key in ['course_A1_2', 'A1_2_error', 'hw_A1_1', 'hw_A1_1_error']:
+    #         print(key)
+    #         print(value)
+    #
+    # pd.set_option('max_colwidth', 1000)
+    # #Get list of phone_numbers
+    # print(raw_data_df[['from','to','body']])
     phone_numbers = raw_data_df['from'].unique().tolist()
 
     #Remove twilio_number from phone_numbers
