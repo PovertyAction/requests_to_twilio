@@ -32,7 +32,7 @@ From the cmd or Powershell, run:
 `python twilio_launcher.py --account_sid your_account_sid --account_token your_account_token --twilio_number your_twilio_number --flow_id flow_id --input_file full_path_to_input_file --batch_size batch_size --sec_between_batches sec_between_batches --columns_with_info_to_send name,full_name,month,year,survey_intro,city,job,caseid`
 
 
-input_file.xlsx should have one column named `Number`, and all other columns specified as inputs (columns_with_info_to_send). Check out `input_example.xlsx` for an example.
+input_file.xlsx must have one column named `Number`, which contains the numbers we want to send messages to. It can also have any other amount of columns with info that we want to send to twilio.  In order to send info from those columns, include those columns names in the `columns_with_info_to_send` arguments, separated by commas.
 
 *Running logs_cleaner.py*
 
