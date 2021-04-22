@@ -78,21 +78,21 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Twilio launcher")
 
     #Add arguments
-    for (argument, arg_help, arg_type) in [
-           ('--account_sid', 'Twilio account SID', str),
-           ('--account_token', 'Twilio account token', str),
-           ('--twilio_number', 'Twilio phone number',str),
-           ('--flow_id','Flow id to which to send the messages', str),
-           ('--input_file','Path to file with inputs',str),
-           ('--batch_size','Batch size',int),
-           ('--sec_between_batches','Seconds between batches',int),
-           ('--columns_with_info_to_send','Columns from input file that we want to be included in message to twilio, separated by commas',str)]:
+    for (argument, arg_help, arg_type, arg_required) in [
+           ('--account_sid', 'Twilio account SID', str, True),
+           ('--account_token', 'Twilio account token', str, True),
+           ('--twilio_number', 'Twilio phone number',str, True),
+           ('--flow_id','Flow id to which to send the messages', str, True),
+           ('--input_file','Path to file with inputs',str, True),
+           ('--batch_size','Batch size',int, True),
+           ('--sec_between_batches','Seconds between batches',int, True),
+           ('--columns_with_info_to_send','Columns from input file that we want to be included in message to twilio, separated by commas',str, False)]:
 
         parser.add_argument(
             argument,
             help=arg_help,
             default=None,
-            required=True,
+            required=arg_required,
             type=arg_type
         )
 
