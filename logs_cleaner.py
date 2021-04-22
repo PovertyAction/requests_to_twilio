@@ -112,6 +112,11 @@ def create_and_export_report(rows_list, output_file_name):
     #Create df
     report_df = pd.DataFrame(rows_list)
     print(report_df)
+
+    #Delete old file version if it exists
+    if os.path.exists(output_file_name):
+      os.remove(output_file_name)
+
     #Export
     report_df.to_csv(output_file_name, index=False)
     print(f"Report saved in {output_file_name}")
