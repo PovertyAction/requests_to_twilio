@@ -137,7 +137,7 @@ def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, o
         return
 
     #Save log data to outputs directory
-    log_data.to_csv(os.path.join(outputs_directory,'raw_log_data.csv'))
+    log_data.to_csv(os.path.join(outputs_directory,f'raw_log_data_{date_sent_after}_{date_sent_before}.csv'.replace(':','-')))
 
     #Create one report for each flow
     for flow in flows:
@@ -327,8 +327,9 @@ def parse_flows_data(list_flows, expected_flow_inputs = [FLOW_NAME, TWILIO_NUMBE
 
         #Validate that flow_inputs are the necessary
         # jsonfile:a whatsappnumber:1 questionsofinterest:[3,5]
+        print(flow_inputs)
         if len(flow_inputs)!=3:
-            print('Each flow_input should have 3 arguments (jsonfile:xxx, whatsappnumber:xxx, questionsofinterest:xxx')
+            print("Each flow_input should have 3 arguments (flow_name:'my_flow' twilio_number:whatsapp_number:+56xxx questions_of_interest:q0,q1)")
             sys.exit(1)
 
         for flow_input in flow_inputs:
