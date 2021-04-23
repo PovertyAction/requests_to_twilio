@@ -174,7 +174,9 @@ def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_
     # pd.set_option('max_colwidth', 1000)
     # #Get list of phone_numbers
     # print(raw_data_df[['from','to','body']])
-    phone_numbers = raw_data_df['from'].unique().tolist()
+    phone_numbers_from = raw_data_df['from'].unique().tolist()
+    phone_numbers_to = raw_data_df['to'].unique().tolist()
+    phone_numbers = list(set(phone_numbers_from + phone_numbers_to))
 
     #Remove twilio_number from phone_numbers
     if twilio_number not in phone_numbers:
