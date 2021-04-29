@@ -13,16 +13,21 @@ TWILIO_NUMBER = 'twilio_number'
 QUESTIONS_OF_INTEREST = 'questions_of_interest'
 
 
-def get_similarity_score(string_a, string_b):
+def get_similarity_score(phrase_a, phrase_b):
 
-    def jaccard_similarity(string_a, string_b):
-        intersection = set(string_a).intersection(set(string_b))
-        union = set(string_a).union(set(string_b))
+    def jaccard_similarity(phrase_a, phrase_b):
+
+        #First we transform phrases to lists of words
+        phrase_a = phrase_a.split(' ')
+        phrase_b = phrase_b.split(' ')
+
+        intersection = set(phrase_a).intersection(set(phrase_b))
+        union = set(phrase_a).union(set(phrase_b))
 
         return len(intersection)/len(union)
 
     #Could use other if they prove to be better here.
-    return jaccard_similarity(string_a, string_b)
+    return jaccard_similarity(phrase_a, phrase_b)
 
 def get_question_code(questions_dict, message, pool_questions_to_consider=None):
 
@@ -38,24 +43,13 @@ def get_question_code(questions_dict, message, pool_questions_to_consider=None):
     for q_code, q_message in questions_dict.items():
         similarity_score = get_similarity_score(q_message, message)
 
+
         if similarity_score > best_similarity_score:
             best_question_code = q_code
             best_similarity_score = similarity_score
 
     if pool_questions_to_consider is not None:
         if best_question_code in pool_questions_to_consider:
-
-            # if similarity_score !=1:
-            #     print('///')
-            #     print(f'best_question_code: {best_question_code}')
-            #     print(f'best_similarity_score: {best_similarity_score}')
-            #     print('message')
-            #     print(message)
-            #     print('raw message')
-            #     print(questions_dict[best_question_code])
-            #     print('***')
-            #     print('')
-
             return best_question_code
         else:
             return None
@@ -69,20 +63,6 @@ def clean_raw_data_df(raw_data_df):
 
     return raw_data_df
 
-# DEPRECATED
-# def load_questions_dict(questions_json_path):
-#
-#     q_code_to_message_dict = {}
-#
-#     with open(questions_json_path, encoding="utf8") as questions_json_file:
-#         questions_dict = json.load(questions_json_file)
-#
-#         flow_states = questions_dict['states']
-#         for flow_state in flow_states:
-#             if 'properties' in flow_state and 'body' in flow_state['properties']:
-#                 q_code_to_message_dict[flow_state['name']] = ftfy.fix_text(flow_state['properties']['body'])
-#
-#     return q_code_to_message_dict
 
 def load_questions_dict(flow_json):
 
@@ -100,9 +80,13 @@ def compute_duration(question_sent_date, answer_sent_date):
 
     # print(question_sent_date, answer_sent_date)
 
-    # def to_date_format(raw_date):
-    #     return datetime.strptime(raw_date, "%Y-%m-%dT%H:%M:%SZ")
+    def to_date_format(raw_date):
+        return datetime.strptime(raw_date, "%Y-%m-%d %H:%M:%S+00:00")
 
+    # debugging=True
+    # if debugging:
+    #     duration = str(to_date_format(answer_sent_date) - to_date_format(question_sent_date))
+    # else:
     duration = str(answer_sent_date - question_sent_date)
 
     return duration
@@ -141,14 +125,12 @@ def create_reports(account_sid, auth_token, date_sent_after, date_sent_before, o
 
     #Create one report for each flow
     for flow in flows:
-
         output_file_name = os.path.join(outputs_directory, f'{flow[FLOW_NAME]}_{date_sent_after}_{date_sent_before}'.replace(':','-'))
 
-        create_clean_report(account_sid, auth_token, log_data, flow, output_file_name)
+        create_clean_report(account_sid, auth_token, log_data, flow, output_file_name, outputs_directory)
 
 
-
-def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_name):
+def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_name, outputs_directory):
 
     #Get flow parameters
     flow_friendly_name = flow[FLOW_NAME]
@@ -165,15 +147,13 @@ def create_clean_report(account_sid, auth_token, raw_data_df, flow, output_file_
         print('Couldnt find flow json')
         sys.exit(1)
 
+    #Save flow_json
+    # json_output_file = os.path.join(outputs_directory,f'{flow_friendly_name}.json')
+    # with open(json_output_file, 'w') as outfile:
+    #     json.dump(flow_json, outfile)
+
     questions_dict = load_questions_dict(flow_json)
-    # for key, value in questions_dict.items():
-    #     if key in ['course_A1_2', 'A1_2_error', 'hw_A1_1', 'hw_A1_1_error']:
-    #         print(key)
-    #         print(value)
-    #
-    # pd.set_option('max_colwidth', 1000)
-    # #Get list of phone_numbers
-    # print(raw_data_df[['from','to','body']])
+
     phone_numbers_from = raw_data_df['from'].unique().tolist()
     phone_numbers_to = raw_data_df['to'].unique().tolist()
     phone_numbers = list(set(phone_numbers_from + phone_numbers_to))
@@ -372,6 +352,7 @@ if __name__=='__main__':
         print(f'Your directory for outputs is not in Boxcryptor, please fix that and run again')
         sys.exit(1)
 
+    print('Lets go')
     create_reports(account_sid=args.account_sid,
                         auth_token=args.account_token,
                         date_sent_after=args.date_sent_after,
