@@ -4,4 +4,4 @@ xlrd
 openpyxl
 ftfy
 twilio
-Crypto
+pycryptodome

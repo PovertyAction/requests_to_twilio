@@ -19,13 +19,16 @@ Use [this](https://phoenixnap.com/kb/how-to-install-python-3-windows) guide to i
 
 The last versions of python have pip already installed (in the first guide it is explained how to check whether pip is installed), but just in case it is not: Use [this](https://www.liquidweb.com/kb/install-pip-windows/) to install pip.
 
-2. Clone this repo inside Command Prompt(cmd) or, preferably, PowerShell. To open cmd or PowerShell, search in Start button from Windows.
+2. Install Microsoft Visual C++ 14.0. Get it from "Build Tools for Visual Studio". To download, click [here](https://download.visualstudio.microsoft.com/download/pr/3e542575-929e-4297-b6c6-bef34d0ee648/639c868e1219c651793aff537a1d3b77/vs_buildtools.exe) and select options like explained [here](https://stackoverflow.com/questions/29846087/microsoft-visual-c-14-0-is-required-unable-to-find-vcvarsall-bat/55575792#55575792). We will need this for the encryption libraries to install later.
+
+3. Clone this repo inside Command Prompt(cmd) or, preferably, PowerShell. To open cmd or PowerShell, search in Start button from Windows.
 
 `git clone https://github.com/PovertyAction/requests_to_twilio.git`
 
-3. Install dependencies in Powershell after getting into the right directory.
+4. Install python dependencies in Powershell after getting into the right directory.
 
 `cd requests_to_twilio` </br>
+`pip install --upgrade setuptools` </br>
 `pip install -r requirements.txt`
 
 # How to run
@@ -38,12 +41,11 @@ From the cmd or Powershell, run:
 
 input_file.xlsx must have one column named `Number`, which contains the numbers we want to send messages to. It can also have any other amount of columns with info that we want to send to twilio.  In order to send info from those columns, include those columns names in the `columns_with_info_to_send` arguments, separated by commas.
 
-## Collecting answers*
+## Collecting answers
 
 [@Carlos, add instructions on adding .js code to twilio widget]
 
-`python .\csv_decryptor.py --encrypted_csv_path C:\path\to\your\csv\demo.csv --list_of_columns_to_decrypt col1,col2 --secret_key your_secret_key1`
-
+`python .\csv_decryptor.py --encrypted_csv_path X:\path\to\your\csv\demo.csv --list_of_columns_to_decrypt col1,col2 --secret_key your_secret_key1`
 
 [DEPRECATED]
 We used to collect answers from a raw_log file. We dont do this anymore cause the log file is not reliable. But if someone is still using this, here is how to call that script:
