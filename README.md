@@ -38,8 +38,19 @@ From the cmd or Powershell, run:
 
 input_file.xlsx must have one column named `Number`, which contains the numbers we want to send messages to. It can also have any other amount of columns with info that we want to send to twilio.  In order to send info from those columns, include those columns names in the `columns_with_info_to_send` arguments, separated by commas.
 
-## Collecting answers: Running twilio_launcher.py*
+## Collecting answers*
 
 [@Carlos, add instructions on adding .js code to twilio widget]
 
 `python .\csv_decryptor.py --encrypted_csv_path C:\path\to\your\csv\demo.csv --list_of_columns_to_decrypt col1,col2 --secret_key your_secret_key1`
+
+
+[DEPRECATED]
+We used to collect answers from a raw_log file. We dont do this anymore cause the log file is not reliable. But if someone is still using this, here is how to call that script:
+
+*Running logs_cleaner.py*
+
+`python .\logs_cleaner.py --account_sid your_account_sid --account_token your_account_token --date_sent_after 2021-03-31T22:15:24Z --date_sent_before 2021-04-01T22:15:24Z --outputs_directory X:\Box\CP_Projects\path\to\folder --flow flow_name:"flow_a" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3 --flow flow_name:"flow_b" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3`
+
+be careful to respect exact same format of inputs
+outputs directory must be in boxcryptor (start with X:)

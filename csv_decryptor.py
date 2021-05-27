@@ -49,7 +49,21 @@ def parse_args():
 
     return parser.parse_args()
 
+def file_in_boxcryptor(file_path):
+    if os.path.abspath(file_path)[0] == 'X':
+        return True
+    else:
+        return False
+
 if __name__=='__main__':
 
     args = parse_args()
+
+    #Validate that input file is in X:
+    csv_in_boxcryptor = file_in_boxcryptor(args.encrypted_csv_path)
+
+    if not csv_in_boxcryptor:
+        print(f'Your file to decrypt must be in Boxcryptor, please fix that and run again')
+        sys.exit(1)
+
     aes_decrypt_csv(args.encrypted_csv_path, args.list_of_columns_to_decrypt.split(','), args.secret_key)
