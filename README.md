@@ -1,8 +1,15 @@
 # Intro
 
-This repo has 2 files.
-1. twilio_launcher.py: Program to send SMS requests to twilio.
-2. logs_cleaner.py: Program to transform raw twilio data form survey responses to a desired output.
+This repo has all necessary code to:
+
+a) Start SMS or whatsapp surveys using twilio
+b) Collect answers from twilio
+
+For a), run `twilio_launcher.py` to launch the survey.
+
+For b), please include the code in `twilio_encrypt_fields.js` in your twilio widget that will send the data to gsheets. Remember to modify the `secret_key` in the first lines of the file, as well as `variable_to_encrypt`. This will send all collected answers to a google sheet, hashing variables selected to encrypt.
+
+Once the data is collected in your google sheet, download it in `.csv` format, and run `csv_decryptor.py` to create a decrypted version of your `.csv`.
 
 # Setup
 
@@ -23,24 +30,16 @@ The last versions of python have pip already installed (in the first guide it is
 
 # How to run
 
-## Using python
-
-*Running twilio_launcher.py*
+## Sending surveys: Running twilio_launcher.py*
 
 From the cmd or Powershell, run:
 
 `python twilio_launcher.py --account_sid your_account_sid --account_token your_account_token --twilio_number your_twilio_number --flow_id flow_id --input_file full_path_to_input_file --batch_size batch_size --sec_between_batches sec_between_batches --columns_with_info_to_send name,full_name,month,year,survey_intro,city,job,caseid`
 
-
 input_file.xlsx must have one column named `Number`, which contains the numbers we want to send messages to. It can also have any other amount of columns with info that we want to send to twilio.  In order to send info from those columns, include those columns names in the `columns_with_info_to_send` arguments, separated by commas.
 
-*Running logs_cleaner.py*
+## Collecting answers: Running twilio_launcher.py*
 
-`python .\logs_cleaner.py --account_sid your_account_sid --account_token your_account_token --date_sent_after 2021-03-31T22:15:24Z --date_sent_before 2021-04-01T22:15:24Z --outputs_directory X:\Box\CP_Projects\path\to\folder --flow flow_name:"flow_a" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3 --flow flow_name:"flow_b" twilio_number:whatsapp:+xxxxx questions_of_interest:intro1,lab_1,lab_2,lab_3`
+[@Carlos, add instructions on adding .js code to twilio widget]
 
-be careful to respect exact same format of inputs
-outputs directory must be in boxcryptor (start with X:)
-
-## Using .exe
-
-[Coming soon]
+`python .\csv_decryptor.py --encrypted_csv_path C:\path\to\your\csv\demo.csv --list_of_columns_to_decrypt col1,col2 --secret_key your_secret_key1`
