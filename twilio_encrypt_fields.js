@@ -44,15 +44,20 @@ d[k>>>24]^e[n>>>16&255]^j[g>>>8&255]^l[h&255]^c[p++],n=d[n>>>24]^e[g>>>16&255]^j
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+// EDIT THIS PART - START
 
-//Secret_key must have 16 characters. Please change it to something secure
+//Secret_key must have 16 characters. Please change it to something secure, save it and do not lose it. 
 secret_key = 'your_secret_key1';
 
 exports.handler = function(context, event, callback) {
   encrypted_message = encrypt(event.variable_to_encrypt, secret_key);
+  //Example for a second variable: encrypted_message_2 = encrypt(event.variable_to_encrypt_2, secret_key);
+  // Create as many variables as variables with PII in your flow. Just change the name of the variables (see example above), and make sure you also add them in the brackets of the line below separated by commas.
   return callback(null, {encrypted_message});
+  //Example with two variables to send back to the survey: return callback(null, {encrypted_message, encrypted_message_2});
 };
 
+//EDIT THIS PART- END
 
 //Reference: https://stackoverflow.com/questions/11567290/cryptojs-and-pycrypto-working-together
 function encrypt(msgString, key) {
