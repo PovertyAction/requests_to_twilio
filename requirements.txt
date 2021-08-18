@@ -4,4 +4,4 @@ xlrd
 openpyxl
 ftfy
 twilio
-pycryptodome
+pycryptodome==3.4.3
